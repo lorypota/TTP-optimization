@@ -1,0 +1,17 @@
+=== Traveling Tournament Problem Results ===
+Instance: GAL4.xml
+Teams: 4
+Date: 2025-10-05 23:28:41
+
+Objective (total distance): 416.00
+Runtime (sec): 0.15
+MIP Gap: 0.0000
+Status: 2
+
+=== Schedule ===
+Round  0: SOL @ GEM, ARA @ ERI
+Round  1: SOL @ ERI, ARA @ GEM
+Round  2: ARA @ SOL, ERI @ GEM
+Round  3: GEM @ SOL, ERI @ ARA
+Round  4: ERI @ SOL, GEM @ ARA
+Round  5: SOL @ ARA, GEM @ ERI

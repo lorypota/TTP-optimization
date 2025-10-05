@@ -1,10 +1,12 @@
-# solve_ttp_from_xml.py
 import os, sys, glob, xml.etree.ElementTree as ET
 import gurobipy as gp
 from gurobipy import GRB, quicksum
+import requests
+import csv
+from datetime import datetime
 
-# ---------- Movement-based MILP (same as earlier, trimmed a bit) ----------
-def build_ttp_movement_mip(d, L_min=1, U_max=3, add_symmetry=True, oddset_sizes=(3,), name="TTP"):
+# ---------- Movement-based MILP ----------
+def build_ttp_movement_mip(d, L_min=1, U_max=3, oddset_sizes=(3,), name="TTP"):
     n = len(d); assert n % 2 == 0, "n must be even"
     R = 2*(n-1)
     T = range(n); K = range(R); K_last = range(R-1)
@@ -69,11 +71,6 @@ def build_ttp_movement_mip(d, L_min=1, U_max=3, add_symmetry=True, oddset_sizes=
             for k in K_last:
                 m.addConstr(zHA[i,j,k] >= h[i,k] + o[i,j,k+1] - 1)
                 m.addConstr(zAH[i,j,k] >= o[i,j,k] + h[i,k+1] - 1)
-
-    # Symmetry breaking (optional)
-    if add_symmetry:
-        m.addConstr(h[0,0] == 1)         # team 0 home in round 0
-        m.addConstr(o[1,0,0] == 1)       # team 1 @ team 0 in round 0
 
     # Small odd-set cuts (|S|=3) per round (cheap & useful)
     for k in K:
@@ -144,16 +141,64 @@ def load_itc_ttp_xml(xml_path):
 
     return d, team_names, R_xml, U_max
 
+# ---------- Fetch instance directly from RobinX repository ----------
+def fetch_instance_xml(name, cache_dir="instances"):
+    """
+    Downloads an instance XML from the RobinX repository if not cached locally.
+    Example: fetch_instance_xml("NL4.xml")
+    """
+    base_url = "https://robinxval.ugent.be/RobinX/Repository/TravelOptimization/Instances/"
+    os.makedirs(cache_dir, exist_ok=True)
+    local_path = os.path.join(cache_dir, name)
+    if os.path.exists(local_path):
+        print(f"[CACHE] Using local copy: {local_path}")
+        return local_path
+
+    url = base_url + name
+    print(f"[FETCH] Downloading {url} ...")
+    r = requests.get(url)
+    if r.status_code != 200:
+        raise RuntimeError(f"Failed to fetch {url} (HTTP {r.status_code})")
+    with open(local_path, "wb") as f:
+        f.write(r.content)
+    print(f"[FETCH] Saved to {local_path}")
+    return local_path
+
+# ---------- Per-instance result logger ----------
+def save_txt_result(xml_name, n, obj, runtime, gap, status, rounds_output, output_dir="results_exact_sol"):
+    os.makedirs(output_dir, exist_ok=True)
+    base = os.path.splitext(xml_name)[0]
+    txt_path = os.path.join(output_dir, f"{base}_results.txt")
+
+    with open(txt_path, "w", encoding="utf-8") as f:
+        f.write(f"=== Traveling Tournament Problem Results ===\n")
+        f.write(f"Instance: {xml_name}\n")
+        f.write(f"Teams: {n}\n")
+        f.write(f"Date: {datetime.now():%Y-%m-%d %H:%M:%S}\n\n")
+        if obj is not None:
+            f.write(f"Objective (total distance): {obj:.2f}\n")
+        if runtime is not None:
+            f.write(f"Runtime (sec): {runtime:.2f}\n")
+        if gap is not None:
+            f.write(f"MIP Gap: {gap:.4f}\n")
+        f.write(f"Status: {status}\n\n")
+
+        if rounds_output:
+            f.write("=== Schedule ===\n")
+            for line in rounds_output:
+                f.write(line + "\n")
+
+    print(f"[LOG] Results saved to {txt_path}")
+
 # ---------- Solve helpers ----------
-def solve_instance(xml_path, time_limit=60, mip_focus=1, quiet=False):
+def solve_instance(xml_path, time_limit=GRB.INFINITY, mip_focus=1, quiet=False):
     d, team_names, R_xml, U_cap = load_itc_ttp_xml(xml_path)
     n = len(team_names); R = 2*(n-1)
     if R_xml and R_xml != R:
         print(f"[WARN] XML has {R_xml} slots but DRR implies {R}. Using DRR={R} in the model.")
 
     m, V = build_ttp_movement_mip(d, L_min=1, U_max=U_cap if U_cap is not None else 3,
-                                  add_symmetry=True, oddset_sizes=(3,),
-                                  name=os.path.basename(xml_path))
+                                  oddset_sizes=(3,), name=os.path.basename(xml_path))
 
     if time_limit: m.Params.TimeLimit = time_limit
     if mip_focus is not None: m.Params.MIPFocus = mip_focus
@@ -167,6 +212,8 @@ def solve_instance(xml_path, time_limit=60, mip_focus=1, quiet=False):
 
     print(f"\n[{os.path.basename(xml_path)}] Objective (total distance): {m.ObjVal:.2f}")
     o = V["o"]; R = 2*(n-1)
+    
+    rounds_output = []
     for k in range(R):
         pairs, used = [], set()
         for i in range(n):
@@ -182,7 +229,15 @@ def solve_instance(xml_path, time_limit=60, mip_focus=1, quiet=False):
                     used.add(i); used.add(j); found = True; break
             if not found:
                 pass
-        print(f"Round {k:2d}: " + ", ".join(pairs))
+        line = f"Round {k:2d}: " + ", ".join(pairs)
+        print(line)
+        rounds_output.append(line)
+    
+    runtime = m.Runtime
+    gap = m.MIPGap if m.MIPGap is not None else 0
+    status = m.Status
+    
+    save_txt_result(os.path.basename(xml_path), n, m.ObjVal, runtime, gap, status, rounds_output)
 
 def main():
     if len(sys.argv) < 2:
@@ -195,9 +250,11 @@ def main():
             print("No .xml files found in folder.")
             sys.exit(1)
         for f in files:
-            solve_instance(f, time_limit=60)
+            solve_instance(f)
     else:
-        solve_instance(target, time_limit=60)
+        if not os.path.exists(target) and not target.startswith("/"):
+            target = fetch_instance_xml(target)
+        solve_instance(target)
 
 if __name__ == "__main__":
     main()

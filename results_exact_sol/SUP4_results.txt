@@ -1,0 +1,17 @@
+=== Traveling Tournament Problem Results ===
+Instance: SUP4.xml
+Teams: 4
+Date: 2025-10-05 23:28:03
+
+Objective (total distance): 63405.00
+Runtime (sec): 0.14
+MIP Gap: 0.0000
+Status: 2
+
+=== Schedule ===
+Round  0: BFN @ AKL, PRE @ CAN
+Round  1: BFN @ CAN, PRE @ AKL
+Round  2: PRE @ BFN, CAN @ AKL
+Round  3: AKL @ BFN, CAN @ PRE
+Round  4: CAN @ BFN, AKL @ PRE
+Round  5: BFN @ PRE, AKL @ CAN

@@ -1,0 +1,17 @@
+=== Traveling Tournament Problem Results ===
+Instance: CIRC4.xml
+Teams: 4
+Date: 2025-10-06 00:46:18
+
+Objective (total distance): 20.00
+Runtime (sec): 0.10
+MIP Gap: 0.0000
+Status: 2
+
+=== Schedule ===
+Round  0: T1 @ T2, T4 @ T3
+Round  1: T1 @ T3, T4 @ T2
+Round  2: T1 @ T4, T3 @ T2
+Round  3: T3 @ T1, T2 @ T4
+Round  4: T2 @ T1, T3 @ T4
+Round  5: T4 @ T1, T2 @ T3
