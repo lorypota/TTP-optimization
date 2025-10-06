@@ -5,8 +5,8 @@ import requests
 import csv
 from datetime import datetime
 
-# ---------- Movement-based MILP ----------
-def build_ttp_movement_mip(d, L_min=1, U_max=3, oddset_sizes=(3,), name="TTP"):
+# ---------- Integer Linear Program ----------
+def build_ttp_movement_ilp(d, L_min=1, U_max=3, oddset_sizes=(3,), name="TTP"):
     n = len(d); assert n % 2 == 0, "n must be even"
     R = 2*(n-1)
     T = range(n); K = range(R); K_last = range(R-1)
@@ -197,7 +197,7 @@ def solve_instance(xml_path, time_limit=GRB.INFINITY, mip_focus=1, quiet=False):
     if R_xml and R_xml != R:
         print(f"[WARN] XML has {R_xml} slots but DRR implies {R}. Using DRR={R} in the model.")
 
-    m, V = build_ttp_movement_mip(d, L_min=1, U_max=U_cap if U_cap is not None else 3,
+    m, V = build_ttp_movement_ilp(d, L_min=1, U_max=U_cap if U_cap is not None else 3,
                                   oddset_sizes=(3,), name=os.path.basename(xml_path))
 
     if time_limit: m.Params.TimeLimit = time_limit
