@@ -1,0 +1,21 @@
+=== Traveling Tournament Problem Results ===
+Instance: NL6.xml
+Teams: 6
+Date: 2025-10-06 19:38:23
+
+Objective (total distance): 23916.00
+Runtime (sec): 1114.92
+MIP Gap: 0.0000
+Status: 2
+
+=== Schedule ===
+Round  0: ATL @ FLA, PHI @ NYM, PIT @ MON
+Round  1: ATL @ NYM, PIT @ PHI, MON @ FLA
+Round  2: MON @ ATL, PIT @ NYM, PHI @ FLA
+Round  3: PHI @ ATL, NYM @ MON, FLA @ PIT
+Round  4: ATL @ PIT, NYM @ PHI, FLA @ MON
+Round  5: ATL @ MON, FLA @ NYM, PHI @ PIT
+Round  6: ATL @ PHI, MON @ NYM, PIT @ FLA
+Round  7: PIT @ ATL, NYM @ FLA, MON @ PHI
+Round  8: NYM @ ATL, FLA @ PHI, MON @ PIT
+Round  9: FLA @ ATL, NYM @ PIT, PHI @ MON

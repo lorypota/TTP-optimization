@@ -1,0 +1,21 @@
+=== Traveling Tournament Problem Results ===
+Instance: SUP6.xml
+Teams: 6
+Date: 2025-10-06 23:59:09
+
+Objective (total distance): 130365.00
+Runtime (sec): 1184.43
+MIP Gap: 0.0000
+Status: 2
+
+=== Schedule ===
+Round  0: PRE @ BFN, HLM @ AKL, SYD @ CAN
+Round  1: CAN @ BFN, SYD @ AKL, PRE @ HLM
+Round  2: AKL @ BFN, CAN @ PRE, SYD @ HLM
+Round  3: BFN @ SYD, AKL @ PRE, HLM @ CAN
+Round  4: BFN @ AKL, PRE @ CAN, HLM @ SYD
+Round  5: BFN @ HLM, CAN @ AKL, PRE @ SYD
+Round  6: SYD @ BFN, PRE @ AKL, CAN @ HLM
+Round  7: HLM @ BFN, AKL @ CAN, SYD @ PRE
+Round  8: BFN @ CAN, AKL @ SYD, HLM @ PRE
+Round  9: BFN @ PRE, AKL @ HLM, CAN @ SYD
