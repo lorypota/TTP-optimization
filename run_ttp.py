@@ -8,44 +8,17 @@ import gurobipy as gp
 from gurobipy import GRB
 import pandas as pd
 import ttp_pricer
+import ttp_instances as instances
 
 # ----------------------- USER INPUT -----------------------
-predefined_instance = "NL4"
+predefined_instance = "CIRC6"
 
-if predefined_instance == "NL4":
-    team_names = [
-        "ATL",  # id=0
-        "NYM",  # id=1
-        "PHI",  # id=2
-        "MON"   # id=3
-    ]
-    
-    dist_matrix = np.array([
-        #   ATL,   NYM,   PHI,   MON
-        [    0,   745,   665,   929],  # ATL
-        [  745,     0,    80,   337],  # NYM
-        [  665,    80,     0,   380],  # PHI
-        [  929,   337,   380,     0]   # MON
-    ], dtype=float)
-elif predefined_instance == "NL6":
-    team_names = [
-        "ATL",  # id=0
-        "NYM",  # id=1
-        "PHI",  # id=2
-        "MON",  # id=3
-        "FLA",  # id=4
-        "PIT"   # id=5
-    ]
-    
-    dist_matrix = np.array([
-        #   ATL,   NYM,   PHI,   MON,   FLA,   PIT
-        [    0,   745,   665,   929,   605,   521],  # ATL
-        [  745,     0,    80,   337,  1090,   315],  # NYM
-        [  665,    80,     0,   380,  1020,   257],  # PHI
-        [  929,   337,   380,     0,  1380,   408],  # MON
-        [  605,  1090,  1020,  1380,     0,  1010],  # FLA
-        [  521,   315,   257,   408,  1010,     0]   # PIT
-    ], dtype=float)
+# Load instance data based on the selection
+if predefined_instance in instances.instances_data:
+    team_names = instances.instances_data[predefined_instance]["team_names"]
+    dist_matrix = instances.instances_data[predefined_instance]["dist_matrix"]
+else:
+    raise ValueError(f"Unknown instance name: {predefined_instance}")
 # ----------------------------------------------------------------
 
 n = len(team_names)
