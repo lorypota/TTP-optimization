@@ -1,7 +1,7 @@
 === Traveling Tournament Problem Results ===
 Instance: CON4.xml
 Teams: 4
-Date: 2025-10-06 00:47:14
+Date: 2025-10-11 11:50:31
 
 Objective (total distance): 17.00
 Runtime (sec): 0.14
