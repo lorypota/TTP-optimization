@@ -4,7 +4,7 @@ from gurobipy import GRB, quicksum
 import requests
 from datetime import datetime
 
-# ---------- Integer Program (Base Formulation) ----------
+# ---------- Base Integer Program ----------
 def build_ttp_base_ip(d, L_min=1, U_max=3, name="TTP_Base"):
     """
     Builds the TTP model based on the standard literature formulation (e.g., Ribeiro et al., 2012).
@@ -103,7 +103,7 @@ def build_ttp_base_ip(d, L_min=1, U_max=3, name="TTP_Base"):
     # Return model and the main game variable for solution printing
     return m, dict(x=x)
 
-# ---------- XML loader (Identical to original) ----------
+# ---------- XML loader ----------
 def load_itc_ttp_xml(xml_path):
     tree = ET.parse(xml_path)
     root = tree.getroot()
@@ -135,7 +135,7 @@ def load_itc_ttp_xml(xml_path):
         U_max = min(U_home, U_away)
     return d, team_names, R_xml, U_max
 
-# ---------- Fetch instance directly from RobinX repository (Identical to original) ----------
+# ---------- Fetch instance directly from RobinX repository ----------
 def fetch_instance_xml(name, cache_dir="instances"):
     base_url = "https://robinxval.ugent.be/RobinX/Repository/TravelOptimization/Instances/"
     os.makedirs(cache_dir, exist_ok=True)
@@ -153,7 +153,7 @@ def fetch_instance_xml(name, cache_dir="instances"):
     print(f"[FETCH] Saved to {local_path}")
     return local_path
 
-# ---------- Per-instance result logger (Identical to original) ----------
+# ---------- Per-instance result logger ----------
 def save_txt_result(xml_name, n, obj, runtime, gap, status, rounds_output, output_dir="results_exact_sol_base"):
     os.makedirs(output_dir, exist_ok=True)
     base = os.path.splitext(xml_name)[0]
@@ -173,14 +173,13 @@ def save_txt_result(xml_name, n, obj, runtime, gap, status, rounds_output, outpu
                 f.write(line + "\n")
     print(f"[LOG] Results saved to {txt_path}")
 
-# ---------- Solve helpers (Modified to call new build function) ----------
+# ---------- Solve helpers ----------
 def solve_instance(xml_path, time_limit=GRB.INFINITY, mip_focus=1, quiet=False):
     d, team_names, R_xml, U_cap = load_itc_ttp_xml(xml_path)
     n = len(team_names); R = 2*(n-1)
     if R_xml and R_xml != R:
         print(f"[WARN] XML has {R_xml} slots but DRR implies {R}. Using DRR={R} in the model.")
 
-    # *** CHANGED: Call the base IP builder instead of the movement one ***
     m, V = build_ttp_base_ip(d, L_min=1, U_max=U_cap if U_cap is not None else 3,
                              name=os.path.basename(xml_path))
 
@@ -195,7 +194,7 @@ def solve_instance(xml_path, time_limit=GRB.INFINITY, mip_focus=1, quiet=False):
         return
 
     print(f"\n[{os.path.basename(xml_path)}] Objective (total distance): {m.ObjVal:.2f}")
-    # *** CHANGED: Use 'x' variable from the returned dictionary ***
+
     x = V["x"]
     
     rounds_output = []
@@ -223,7 +222,7 @@ def solve_instance(xml_path, time_limit=GRB.INFINITY, mip_focus=1, quiet=False):
     
     save_txt_result(os.path.basename(xml_path), n, m.ObjVal, runtime, gap, status, rounds_output)
 
-# ---------- Main entry point (Identical to original) ----------
+# ---------- Main entry point ----------
 def main():
     if len(sys.argv) < 2:
         print("Usage: python solve_ttp_base_ip.py <instance.xml | folder>")

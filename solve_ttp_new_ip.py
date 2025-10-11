@@ -4,7 +4,7 @@ from gurobipy import GRB, quicksum
 import requests
 from datetime import datetime
 
-# ---------- Integer Program ----------
+# ---------- New Integer Program ----------
 def build_ttp_movement_ip(d, L_min=1, U_max=3, name="TTP"):
     n = len(d); assert n % 2 == 0, "n must be even"
     R = 2*(n-1)
@@ -238,6 +238,7 @@ def solve_instance(xml_path, time_limit=GRB.INFINITY, mip_focus=1, quiet=False):
     
     save_txt_result(os.path.basename(xml_path), n, m.ObjVal, runtime, gap, status, rounds_output)
 
+# ---------- Main entry point ----------
 def main():
     if len(sys.argv) < 2:
         print("Usage: python solve_ttp_ip.py <instance.xml | folder>")
