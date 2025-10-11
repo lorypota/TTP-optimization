@@ -2,7 +2,6 @@ import os, sys, glob, xml.etree.ElementTree as ET
 import gurobipy as gp
 from gurobipy import GRB, quicksum
 import requests
-import csv
 from datetime import datetime
 
 # ---------- Integer Program ----------
@@ -165,7 +164,7 @@ def fetch_instance_xml(name, cache_dir="instances"):
     return local_path
 
 # ---------- Per-instance result logger ----------
-def save_txt_result(xml_name, n, obj, runtime, gap, status, rounds_output, output_dir="results_exact_sol"):
+def save_txt_result(xml_name, n, obj, runtime, gap, status, rounds_output, output_dir="results_exact_sol_new"):
     os.makedirs(output_dir, exist_ok=True)
     base = os.path.splitext(xml_name)[0]
     txt_path = os.path.join(output_dir, f"{base}_results.txt")
