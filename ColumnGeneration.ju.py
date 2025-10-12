@@ -91,7 +91,7 @@ instances_data = {
 
 # %% [md]
 """
-## ChatGPT solution (something wrong, wrong objective values)
+## Column Generation
 """
 
 # %%
