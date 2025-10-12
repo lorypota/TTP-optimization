@@ -1,7 +1,7 @@
 === Traveling Tournament Problem Results (Base Model) ===
 Instance: SUP4.xml
 Teams: 4
-Date: 2025-10-12 18:44:34
+Date: 2025-10-12 19:40:53
 
 Objective (total distance): 63405.00
 Runtime (sec): 0.17

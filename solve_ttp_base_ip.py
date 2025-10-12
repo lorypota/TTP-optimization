@@ -45,13 +45,21 @@ def build_ttp_base_ip(d, L, U, name="TTP_Base"):
     # Eq. 7: away run bounds with window size U+1, lower bound L and upper bound U
     # windows start at k = 0..R-U-1
     m.addConstrs((
-        quicksum(x[i,j,k+l] for l in range(U+1) for j in T) >= L
-        for i in T for k in range(R - U)
-    ), name="away_LB")
-    m.addConstrs((
         quicksum(x[i,j,k+l] for l in range(U+1) for j in T) <= U
         for i in T for k in range(R - U)
     ), name="away_UB")
+    m.addConstrs((
+        quicksum(x[j,i,k+l] for l in range(U+1) for j in T) <= U
+        for i in T for k in range(R - U)
+    ), name="home_UB")
+    m.addConstrs((
+    quicksum(x[i,j,k+l] for l in range(U+1) for j in T) >= L
+    for i in T for k in range(R - U)
+    ), name="away_LB")
+    m.addConstrs((
+        quicksum(x[j,i,k+l] for l in range(U+1) for j in T) >= L
+        for i in T for k in range(R - U)
+    ), name="home_LB")
 
     # Eq. 8: non repeater
     m.addConstrs((
