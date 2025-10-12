@@ -5,7 +5,7 @@ import requests
 from datetime import datetime
 
 # ---------- Base Integer Program ----------
-def build_ttp_base_ip(d, L_min=1, U_max=3, name="TTP_Base"):
+def build_ttp_base_ip(d, L, U, name="TTP_Base"):
     """
     Builds the TTP model based on the standard literature formulation (e.g., Ribeiro et al., 2012).
     Uses x_ijk for game assignments and y_tijk for travel between rounds.
@@ -15,93 +15,61 @@ def build_ttp_base_ip(d, L_min=1, U_max=3, name="TTP_Base"):
     T = range(n); K = range(R); K_last = range(R-1)
     m = gp.Model(name)
 
-    # --- Decision Variables ---
-    # x[i,j,k] = 1 if team i plays away against team j in round k
-    x = m.addVars(((i,j,k) for i in T for j in T if i!=j for k in K), vtype=GRB.BINARY, name="x")
-
-    # y[t,i,j,k] = 1 if team t travels from venue i to venue j between rounds k and k+1
+    # Decision variables
+    # x[i,j,k] for all i,j (including i==j); Eq. 4 will force x[i,i,k]=0
+    x = m.addVars(((i,j,k) for i in T for j in T for k in K), vtype=GRB.BINARY, name="x")
+    # y[t,i,j,k] for all i,j (including i==j)
     y = m.addVars(((t,i,j,k) for t in T for i in T for j in T for k in K_last), vtype=GRB.BINARY, name="y")
-
-    # Helper variable: z[t,i,k] = 1 if team t is at venue i in round k
+    # z[t,i,k] for all t,i
     z = m.addVars(((t,i,k) for t in T for i in T for k in K), vtype=GRB.BINARY, name="z")
 
-    # Helper variable: h[i,k] = 1 if team i plays home in round k
-    h = m.addVars(((i,k) for i in T for k in K), vtype=GRB.BINARY, name="h")
-
-    # --- Objective Function ---
-    # 1. Travel from home to first away game
-    obj = quicksum(d[i][j] * x[i,j,0] for i in T for j in T if i!=j)
-    # 2. Travel between rounds
-    obj += quicksum(d[i][j] * y[t,i,j,k] for t in T for i in T for j in T for k in K_last)
-    # 3. Travel from last away game back to home
-    obj += quicksum(d[j][i] * x[i,j,R-1] for i in T for j in T if i!=j)
+    # Objective (Eq. 3; rounds are 0 indexed here)
+    obj  = quicksum(d[i][j] * x[i,j,0]           for i in T for j in T)
+    obj += quicksum(d[i][j] * y[t,i,j,k]         for t in T for i in T for j in T for k in K_last)
+    obj += quicksum(d[j][i] * x[i,j,R-1]         for i in T for j in T)
     m.setObjective(obj, GRB.MINIMIZE)
 
-    # --- Constraints ---
-    # One game per team per round
-    for i in T:
-        for k in K:
-            # Team i is either away (sum(x[i,j,k])) or home (sum(x[j,i,k]))
-            m.addConstr(quicksum(x[i,j,k] for j in T if j!=i) + quicksum(x[j,i,k] for j in T if j!=i) == 1)
+    # Eq. 4: forbid self matches
+    m.addConstrs((x[i,i,k] == 0 for i in T for k in K), name="no_self")
 
-    # Each ordered pair occurs once (Double Round Robin)
-    for i in T:
-        for j in T:
-            if i!=j:
-                m.addConstr(quicksum(x[i,j,k] for k in K) == 1)
+    # Eq. 5: one game per team per round
+    m.addConstrs((
+        quicksum(x[i,j,k] + x[j,i,k] for j in T) == 1
+        for i in T for k in K), name="one_match_per_round"
+    )
 
-    # No repeaters
-    for i in T:
-        for j in T:
-            if i<j:
-                for k in K_last:
-                    m.addConstr(x[i,j,k]+x[j,i,k]+x[i,j,k+1]+x[j,i,k+1] <= 1)
+    # Eq. 6: each ordered pair occurs once
+    m.addConstrs((quicksum(x[i,j,k] for k in K) == 1
+                  for i in T for j in T if i != j), name="drr")
 
-    # Link home indicator variable 'h'
-    for i in T:
-        for k in K:
-            # Team i is home if some other team j plays away against it
-            m.addConstr(h[i,k] == quicksum(x[j,i,k] for j in T if j!=i))
+    # Eq. 7: away run bounds with window size U+1, lower bound L and upper bound U
+    # windows start at k = 0..R-U-1
+    m.addConstrs((
+        quicksum(x[i,j,k+l] for l in range(U+1) for j in T) >= L
+        for i in T for k in range(R - U)
+    ), name="away_LB")
+    m.addConstrs((
+        quicksum(x[i,j,k+l] for l in range(U+1) for j in T) <= U
+        for i in T for k in range(R - U)
+    ), name="away_UB")
 
-    # Run caps via sliding windows (using the 'h' variable)
-    if U_max is not None and U_max >= 1:
-        for i in T:
-            for k in range(R - U_max):
-                # Max away runs: at least 1 home game in any window of size U_max+1
-                m.addConstr(quicksum(h[i,r] for r in range(k, k+U_max+1)) >= 1)
-                # Max home runs: at most U_max home games in any window of size U_max+1
-                m.addConstr(quicksum(1 - h[i,r] for r in range(k, k+U_max+1)) >= 1)
+    # Eq. 8: non repeater
+    m.addConstrs((
+        x[i,j,k] + x[j,i,k] + x[i,j,k+1] + x[j,i,k+1] <= 1
+        for i in T for j in T if i < j for k in K_last
+    ), name="no_repeater")
 
+    # Eq. 9 and 10: define locations z
+    m.addConstrs((z[i,i,k] == quicksum(x[j,i,k] for j in T) for i in T for k in K), name="z_home")
+    m.addConstrs((z[i,j,k] == x[i,j,k]               for i in T for j in T if i != j for k in K), name="z_away")
 
-    # --- Travel Logic Constraints ---
-    # Define location z[t,i,k]
-    for t in T:
-        for k in K:
-            # Team t is at its own venue 't' if it's playing home
-            m.addConstr(z[t,t,k] == h[t,k])
-            # Team t is at venue 'i' if it's playing away against team i
-            for i in T:
-                if i != t:
-                    m.addConstr(z[t,i,k] == x[t,i,k])
+    # Eq. 11: link travel to locations
+    m.addConstrs((
+        y[t,i,j,k] >= z[t,i,k] + z[t,j,k+1] - 1
+        for t in T for i in T for j in T for k in K_last
+    ), name="travel_link")
 
-    # Link location 'z' to travel 'y'
-    for t in T:
-        for i in T:
-            for j in T:
-                for k in K_last:
-                    # If team t is at venue i in round k AND at venue j in round k+1, then y[t,i,j,k] must be 1
-                    m.addConstr(y[t,i,j,k] >= z[t,i,k] + z[t,j,k+1] - 1)
-
-    # Small odd-set cuts (|S|=3) per round (cheap & useful)
-    for k in K:
-        for a in range(n):
-            for b in range(a+1, n):
-                for c in range(b+1, n):
-                    # at most floor(3/2)=1 internal match among {a,b,c} in round k
-                    m.addConstr((x[a,b,k]+x[b,a,k]) + (x[a,c,k]+x[c,a,k]) + (x[b,c,k]+x[c,b,k]) <= 1)
-    
-    # Return model and the main game variable for solution printing
-    return m, dict(x=x)
+    return m, dict(x=x, y=y, z=z)
 
 # ---------- XML loader ----------
 def load_itc_ttp_xml(xml_path):
@@ -180,8 +148,15 @@ def solve_instance(xml_path, time_limit=GRB.INFINITY, mip_focus=1, quiet=False):
     if R_xml and R_xml != R:
         print(f"[WARN] XML has {R_xml} slots but DRR implies {R}. Using DRR={R} in the model.")
 
-    m, V = build_ttp_base_ip(d, L_min=1, U_max=U_cap if U_cap is not None else 3,
-                             name=os.path.basename(xml_path))
+    # ensure zero diagonal for safety (matches Eq. 4 + objective)
+    for i in range(n):
+        d[i][i] = 0.0
+
+    # choose bounds for Eq. 7
+    L_val = 0                 # or parse from XML if available; 0 is a safe default
+    U_val = U_cap if U_cap is not None else n - 1
+
+    m, V = build_ttp_base_ip(d, L=L_val, U=U_val, name=os.path.basename(xml_path))
 
     if time_limit: m.Params.TimeLimit = time_limit
     if mip_focus is not None: m.Params.MIPFocus = mip_focus

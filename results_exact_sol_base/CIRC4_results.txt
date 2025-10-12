@@ -1,10 +1,10 @@
-=== Traveling Tournament Problem Results ===
-Instance: LINE4.xml
+=== Traveling Tournament Problem Results (Base Model) ===
+Instance: CIRC4.xml
 Teams: 4
-Date: 2025-10-12 18:53:34
+Date: 2025-10-12 18:45:01
 
-Objective (total distance): 24.00
-Runtime (sec): 0.13
+Objective (total distance): 20.00
+Runtime (sec): 0.16
 MIP Gap: 0.0000
 Status: 2
 

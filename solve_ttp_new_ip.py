@@ -5,79 +5,119 @@ import requests
 from datetime import datetime
 
 # ---------- New Integer Program ----------
-def build_ttp_movement_ip(d, L_min=1, U_max=3, name="TTP"):
-    n = len(d); assert n % 2 == 0, "n must be even"
+def build_ttp_movement_ip(d, L=1, U=3, name="TTP_new"):
+    """
+    Movement-based TTP IP on the new formulation.
+    """
+    n = len(d); assert n % 2 == 0
     R = 2*(n-1)
     T = range(n); K = range(R); K_last = range(R-1)
+
     m = gp.Model(name)
 
-    o = m.addVars(((i,j,k) for i in T for j in T if i!=j for k in K), vtype=GRB.BINARY, name="o")
-    h = m.addVars(((i,k) for i in T for k in K), vtype=GRB.BINARY, name="h")
-    zAA = m.addVars(((i,j,ell,k) for i in T for j in T if j!=i for ell in T if ell!=i and ell!=j for k in K_last),
-                    vtype=GRB.BINARY, name="zAA")
+    # Decision variables (compact domains)
+    o   = m.addVars(((i,j,k) for i in T for j in T if i!=j for k in K), vtype=GRB.BINARY, name="o")
+    h   = m.addVars(((i,k)   for i in T for k in K),                         vtype=GRB.BINARY, name="h")
+    zAA = m.addVars(((i,j,ell,k) for i in T for j in T if j!=i
+                                   for ell in T if ell!=i
+                                   for k in K_last), vtype=GRB.BINARY, name="zAA")
     zHA = m.addVars(((i,j,k) for i in T for j in T if j!=i for k in K_last), vtype=GRB.BINARY, name="zHA")
     zAH = m.addVars(((i,j,k) for i in T for j in T if j!=i for k in K_last), vtype=GRB.BINARY, name="zAH")
 
-    # Objective
-    expr = quicksum(d[i][j]*o[i,j,0] for i in T for j in T if i!=j)
-    expr += quicksum(d[j][ell]*zAA[i,j,ell,k] for i in T for j in T if j!=i for ell in T if ell!=i and ell!=j for k in K_last)
-    expr += quicksum(d[i][j]*zHA[i,j,k] for i in T for j in T if j!=i for k in K_last)
-    expr += quicksum(d[j][i]*zAH[i,j,k] for i in T for j in T if j!=i for k in K_last)
-    expr += quicksum(d[j][i]*o[i,j,R-1] for i in T for j in T if i!=j)
-    m.setObjective(expr, GRB.MINIMIZE)
+    # Optional start-of-run binaries for L>1 (minimum run length)
+    use_min_runs = (L is not None and L > 1)
+    if use_min_runs:
+        sA = m.addVars(((i,k) for i in T for k in K), vtype=GRB.BINARY, name="sA")
+        sH = m.addVars(((i,k) for i in T for k in K), vtype=GRB.BINARY, name="sH")
 
-    # One game per team per round
-    for i in T:
-        for k in K:
-            m.addConstr(quicksum(o[i,j,k] for j in T if j!=i) + quicksum(o[j,i,k] for j in T if j!=i) == 1)
+    # Objective (home->first away) + (inter-round movements) + (last away->home)
+    obj  = quicksum(d[i][j] * o[i,j,0]     for i in T for j in T if j!=i)
+    obj += quicksum(d[j][ell] * zAA[i,j,ell,k] for i in T for k in K_last
+                                            for j in T if j!=i for ell in T if ell!=i)
+    obj += quicksum(d[i][j] * zHA[i,j,k]   for i in T for j in T if j!=i for k in K_last)
+    obj += quicksum(d[j][i] * zAH[i,j,k]   for i in T for j in T if j!=i for k in K_last)
+    obj += quicksum(d[j][i] * o[i,j,R-1]   for i in T for j in T if j!=i)
+    m.setObjective(obj, GRB.MINIMIZE)
 
-    # Each ordered pair once
-    for i in T:
-        for j in T:
-            if i!=j:
-                m.addConstr(quicksum(o[i,j,k] for k in K) == 1)
+    # Scheduling: one game per team per round
+    m.addConstrs((
+        quicksum(o[i,j,k] + o[j,i,k] for j in T if j!=i) == 1
+        for i in T for k in K
+    ), name="one_match_per_round")
 
-    # No repeaters
-    for i in T:
-        for j in T:
-            if i<j:
-                for k in K_last:
-                    m.addConstr(o[i,j,k]+o[j,i,k]+o[i,j,k+1]+o[j,i,k+1] <= 1)
+    # DRR: each ordered pair once (i plays away at j exactly once)
+    m.addConstrs((
+        quicksum(o[i,j,k] for k in K) == 1
+        for i in T for j in T if i!=j
+    ), name="double_round_robin")
 
-    # Home indicator
-    for i in T:
-        for k in K:
-            m.addConstr(h[i,k] + quicksum(o[i,j,k] for j in T if j!=i) == 1)
+    # Home indicator definition
+    m.addConstrs((
+        h[i,k] + quicksum(o[i,j,k] for j in T if j!=i) == 1
+        for i in T for k in K
+    ), name="home_def")
 
-    # Run caps via sliding windows of size U_max+1 (if provided)
-    if U_max is not None and U_max >= 1:
+    # No repeater
+    m.addConstrs((
+        o[i,j,k] + o[j,i,k] + o[i,j,k+1] + o[j,i,k+1] <= 1
+        for i in T for j in T if i<j for k in K_last
+    ), name="no_repeater")
+
+    # Run-length caps (at most U consecutive away / home) via windows of size U+1
+    # Correct form: in every window, at least one home and at least one away.
+    m.addConstrs((
+        quicksum(h[i,r] for r in range(k, k+U+1)) >= 1
+        for i in T for k in range(R - U)
+    ), name="max_away_cap")
+    m.addConstrs((
+        quicksum(1 - h[i,r] for r in range(k, k+U+1)) >= 1
+        for i in T for k in range(R - U)
+    ), name="max_home_cap")
+
+    # Minimum run length L (only if L>1), exactly as in the write-up
+    if use_min_runs:
+        # away indicator a[i,k] = 1 - h[i,k]
+        # start-of-away run sA[i,k] and start-of-home run sH[i,k]
+        # Link starts (with k-1 wrap as 0 at k=0)
         for i in T:
-            for k in range(R - U_max):
-                m.addConstr(quicksum(h[i,r] for r in range(k, k+U_max+1)) >= 1)       # cap away runs
-                m.addConstr(quicksum(h[i,r] for r in range(k, k+U_max+1)) <= U_max)   # cap home runs
+            # k=0
+            m.addConstr(sA[i,0] >= (1 - h[i,0]) - 0)
+            m.addConstr(sA[i,0] <= (1 - h[i,0]))
+            m.addConstr(sA[i,0] <= 1 - 0)
+            m.addConstr(sH[i,0] >= h[i,0] - 0)
+            m.addConstr(sH[i,0] <= h[i,0])
+            m.addConstr(sH[i,0] <= 1 - 0)
+            # k>=1
+            for k in range(1, R):
+                m.addConstr(sA[i,k] >= (1 - h[i,k]) - (1 - h[i,k-1]))
+                m.addConstr(sA[i,k] <= (1 - h[i,k]))
+                m.addConstr(sA[i,k] <= h[i,k-1])
+                m.addConstr(sH[i,k] >= h[i,k] - h[i,k-1])
+                m.addConstr(sH[i,k] <= h[i,k])
+                m.addConstr(sH[i,k] <= 1 - h[i,k-1])
 
-    # Movement linearizations
-    for i in T:
-        for k in K_last:
-            for j in T:
-                if j==i: continue
-                for ell in T:
-                    if ell==i or ell==j: continue
-                    m.addConstr(zAA[i,j,ell,k] >= o[i,j,k] + o[i,ell,k+1] - 1)
-    for i in T:
-        for j in T:
-            if j==i: continue
-            for k in K_last:
-                m.addConstr(zHA[i,j,k] >= h[i,k] + o[i,j,k+1] - 1)
-                m.addConstr(zAH[i,j,k] >= o[i,j,k] + h[i,k+1] - 1)
+        # Enforce minima on runs
+        for i in T:
+            for k in K:
+                endA = min(k + L - 1, R - 1)
+                endH = min(k + L - 1, R - 1)
+                m.addConstr(quicksum(1 - h[i,r] for r in range(k, endA + 1)) >= L * sA[i,k], name=f"minAway_{i}_{k}")
+                m.addConstr(quicksum(h[i,r]     for r in range(k, endH + 1)) >= L * sH[i,k], name=f"minHome_{i}_{k}")
 
-    # Small odd-set cuts (|S|=3) per round (cheap & useful)
-    for k in K:
-        for a in range(n):
-            for b in range(a+1, n):
-                for c in range(b+1, n):
-                    # at most floor(3/2)=1 internal match among {a,b,c} in round k
-                    m.addConstr((o[a,b,k]+o[b,a,k]) + (o[a,c,k]+o[c,a,k]) + (o[b,c,k]+o[c,b,k]) <= 1)
+    # Movement linearization (no ell!=j restriction; formulation allows ell=j)
+    m.addConstrs((
+        zAA[i,j,ell,k] >= o[i,j,k] + o[i,ell,k+1] - 1
+        for i in T for k in K_last
+        for j in T if j!=i for ell in T if ell!=i
+    ), name="zAA_link")
+    m.addConstrs((
+        zHA[i,j,k] >= h[i,k] + o[i,j,k+1] - 1
+        for i in T for j in T if j!=i for k in K_last
+    ), name="zHA_link")
+    m.addConstrs((
+        zAH[i,j,k] >= o[i,j,k] + h[i,k+1] - 1
+        for i in T for j in T if j!=i for k in K_last
+    ), name="zAH_link")
 
     return m, dict(o=o, h=h, zAA=zAA, zHA=zHA, zAH=zAH)
 
@@ -196,8 +236,9 @@ def solve_instance(xml_path, time_limit=GRB.INFINITY, mip_focus=1, quiet=False):
     if R_xml and R_xml != R:
         print(f"[WARN] XML has {R_xml} slots but DRR implies {R}. Using DRR={R} in the model.")
 
-    m, V = build_ttp_movement_ip(d, L_min=1, U_max=U_cap if U_cap is not None else 3,
-                                  name=os.path.basename(xml_path))
+    L_val = 1
+    U_val = U_cap if U_cap is not None else 3
+    m, V = build_ttp_movement_ip(d, L=L_val, U=U_val, name=os.path.basename(xml_path))
 
     if time_limit: m.Params.TimeLimit = time_limit
     if mip_focus is not None: m.Params.MIPFocus = mip_focus
