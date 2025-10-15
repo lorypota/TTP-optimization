@@ -1,10 +1,10 @@
 === Traveling Tournament Problem Results ===
 Instance: CIRC4.xml
 Teams: 4
-Date: 2025-10-12 18:53:19
+Date: 2025-10-15 15:53:33
 
 Objective (total distance): 20.00
-Runtime (sec): 0.12
+Runtime (sec): 0.10
 MIP Gap: 0.0000
 Status: 2
 

@@ -1,7 +1,7 @@
 === Traveling Tournament Problem Results (Base Model) ===
 Instance: CIRC4.xml
 Teams: 4
-Date: 2025-10-12 19:40:34
+Date: 2025-10-15 14:56:30
 
 Objective (total distance): 20.00
 Runtime (sec): 0.16

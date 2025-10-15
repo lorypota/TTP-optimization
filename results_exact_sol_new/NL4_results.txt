@@ -1,17 +1,17 @@
 === Traveling Tournament Problem Results ===
 Instance: NL4.xml
 Teams: 4
-Date: 2025-10-12 18:53:07
+Date: 2025-10-13 00:08:25
 
 Objective (total distance): 8276.00
-Runtime (sec): 0.17
+Runtime (sec): 0.12
 MIP Gap: 0.0000
 Status: 2
 
 === Schedule ===
-Round  0: PHI @ ATL, NYM @ MON
-Round  1: NYM @ ATL, MON @ PHI
-Round  2: MON @ ATL, NYM @ PHI
-Round  3: ATL @ PHI, MON @ NYM
-Round  4: ATL @ NYM, PHI @ MON
-Round  5: ATL @ MON, PHI @ NYM
+Round  0: ATL @ MON, PHI @ NYM
+Round  1: ATL @ NYM, PHI @ MON
+Round  2: ATL @ PHI, NYM @ MON
+Round  3: NYM @ ATL, MON @ PHI
+Round  4: MON @ ATL, NYM @ PHI
+Round  5: PHI @ ATL, MON @ NYM
