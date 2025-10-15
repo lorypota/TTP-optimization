@@ -1,0 +1,21 @@
+=== Traveling Tournament Problem Results (Base Model) ===
+Instance: LINE6.xml
+Teams: 6
+Date: 2025-10-15 18:11:52
+
+Objective (total distance): 84.00
+Runtime (sec): 6172.94
+MIP Gap: 0.0000
+Status: 2
+
+=== Schedule ===
+Round  0: T2 @ T1, T3 @ T5, T4 @ T6
+Round  1: T4 @ T1, T2 @ T5, T3 @ T6
+Round  2: T5 @ T1, T2 @ T6, T3 @ T4
+Round  3: T1 @ T3, T5 @ T2, T6 @ T4
+Round  4: T1 @ T4, T6 @ T2, T5 @ T3
+Round  5: T6 @ T1, T2 @ T3, T4 @ T5
+Round  6: T3 @ T1, T2 @ T4, T5 @ T6
+Round  7: T1 @ T6, T3 @ T2, T5 @ T4
+Round  8: T1 @ T5, T4 @ T2, T6 @ T3
+Round  9: T1 @ T2, T4 @ T3, T6 @ T5

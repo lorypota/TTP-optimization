@@ -1,0 +1,21 @@
+=== Traveling Tournament Problem Results ===
+Instance: CIRC6.xml
+Teams: 6
+Date: 2025-10-15 16:22:54
+
+Objective (total distance): 64.00
+Runtime (sec): 1485.40
+MIP Gap: 0.0000
+Status: 2
+
+=== Schedule ===
+Round  0: T1 @ T6, T2 @ T3, T4 @ T5
+Round  1: T1 @ T2, T5 @ T3, T4 @ T6
+Round  2: T4 @ T1, T5 @ T2, T6 @ T3
+Round  3: T5 @ T1, T6 @ T2, T3 @ T4
+Round  4: T2 @ T1, T3 @ T5, T6 @ T4
+Round  5: T1 @ T3, T4 @ T2, T5 @ T6
+Round  6: T1 @ T5, T2 @ T6, T4 @ T3
+Round  7: T1 @ T4, T2 @ T5, T3 @ T6
+Round  8: T3 @ T1, T2 @ T4, T6 @ T5
+Round  9: T6 @ T1, T3 @ T2, T5 @ T4
