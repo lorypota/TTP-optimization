@@ -181,7 +181,7 @@ def load_itc_ttp_xml(xml_path):
     return d, team_names, R_xml, U_max
 
 # ---------- Fetch instance directly from RobinX repository ----------
-def fetch_instance_xml(name, cache_dir="instances"):
+def fetch_instance_xml(name, cache_dir="../instances"):
     """
     Downloads an instance XML from the RobinX repository if not cached locally.
     Example: fetch_instance_xml("NL4.xml")

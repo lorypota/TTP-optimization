@@ -112,7 +112,7 @@ def load_itc_ttp_xml(xml_path):
     return d, team_names, R_xml, U_max
 
 # ---------- Fetch instance directly from RobinX repository ----------
-def fetch_instance_xml(name, cache_dir="instances"):
+def fetch_instance_xml(name, cache_dir="../instances"):
     base_url = "https://robinxval.ugent.be/RobinX/Repository/TravelOptimization/Instances/"
     os.makedirs(cache_dir, exist_ok=True)
     local_path = os.path.join(cache_dir, name)
