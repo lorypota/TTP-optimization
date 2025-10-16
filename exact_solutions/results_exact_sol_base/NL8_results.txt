@@ -1,0 +1,25 @@
+=== Traveling Tournament Problem Results (Base Model) ===
+Instance: NL8.xml
+Teams: 8
+Date: 2025-10-14 14:31:53
+
+Objective (total distance): 40865.00
+Runtime (sec): 137564.36
+MIP Gap: 0.2828
+Status: 11
+
+=== Schedule ===
+Round  0: ATL @ FLA, NYM @ CIN, PHI @ PIT, MON @ CHI
+Round  1: PIT @ ATL, NYM @ CHI, PHI @ FLA, MON @ CIN
+Round  2: PHI @ ATL, NYM @ MON, PIT @ FLA, CIN @ CHI
+Round  3: ATL @ NYM, FLA @ PHI, CIN @ MON, CHI @ PIT
+Round  4: ATL @ MON, CIN @ NYM, CHI @ PHI, FLA @ PIT
+Round  5: ATL @ PHI, CHI @ NYM, MON @ PIT, FLA @ CIN
+Round  6: MON @ ATL, NYM @ FLA, PHI @ CIN, PIT @ CHI
+Round  7: NYM @ ATL, PHI @ CHI, MON @ FLA, PIT @ CIN
+Round  8: ATL @ PIT, FLA @ NYM, CIN @ PHI, CHI @ MON
+Round  9: ATL @ CHI, NYM @ PHI, FLA @ MON, CIN @ PIT
+Round 10: ATL @ CIN, NYM @ PIT, PHI @ MON, FLA @ CHI
+Round 11: CHI @ ATL, MON @ NYM, PIT @ PHI, CIN @ FLA
+Round 12: CIN @ ATL, PIT @ NYM, MON @ PHI, CHI @ FLA
+Round 13: FLA @ ATL, PHI @ NYM, PIT @ MON, CHI @ CIN

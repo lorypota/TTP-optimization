@@ -1,10 +1,10 @@
 === Traveling Tournament Problem Results (Base Model) ===
 Instance: NL6.xml
 Teams: 6
-Date: 2025-10-11 13:27:33
+Date: 2025-10-13 00:03:30
 
 Objective (total distance): 23916.00
-Runtime (sec): 2644.74
+Runtime (sec): 1267.05
 MIP Gap: 0.0000
 Status: 2
 
